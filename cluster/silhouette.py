@@ -9,6 +9,16 @@ class Silhouette:
                 the name of the distance metric to use
         """
 
+        possible_metrics = [ #possible metrics supported by scipy.spatial.distance
+         'braycurtis', 'canberra', 'chebyshev', 'cityblock', 'correlation', 'cosine', 
+         'dice', 'euclidean', 'hamming', 'jaccard', 'jensenshannon', 'kulsinski', 'mahalanobis', 
+         'matching', 'minkowski', 'rogerstanimoto', 'russellrao', 'seuclidean', 'sokalmichener', 'sokalsneath', 
+         'sqeuclidean', 'wminkowski', 'yule'
+                           ]
+        if metric not in possible_metrics:
+            raise ValueError(f"The distance metric must be one of:\n {possible_metrics}")
+        self._metric = metric
+
     def score(self, X: np.ndarray, y: np.ndarray) -> np.ndarray:
         """
         calculates the silhouette score for each of the observations
