@@ -27,7 +27,7 @@ class KMeans:
         self.random_state = random_state
         
         
-        possible_metrics = [
+        possible_metrics = [ #possible metrics supported by scipy.spatial.distance
          'braycurtis', 'canberra', 'chebyshev', 'cityblock', 'correlation', 'cosine', 
          'dice', 'euclidean', 'hamming', 'jaccard', 'jensenshannon', 'kulsinski', 'mahalanobis', 
          'matching', 'minkowski', 'rogerstanimoto', 'russellrao', 'seuclidean', 'sokalmichener', 'sokalsneath', 
@@ -243,5 +243,4 @@ class KMeans:
             return self._centroid_locations
         else:
             raise AssertionError(f"You must fit the model to get the cluster centroids")
-            
             
