@@ -36,6 +36,56 @@ class KMeans:
         if metric not in possible_metrics:
             raise ValueError(f"The distance metric must be one of:\n {possible_metrics}")
         self._metric = metric
+        
+        
+        
+        
+    def _MSE(self, mat: np.ndarray, centroid_mat: np.ndarray,cluster_assignments:np.ndarray):
+        """
+        Calculates Mean squared error between observations and their corresponding cluster centers
+
+        inputs: 
+            mat: np.ndarray
+                A 2D matrix where the rows are observations and columns are features
+            centroid_mat: np.ndarray
+                A 2D matrix with k rows and mat.shape[1] columns where each rows is a clusters centroid vector. 
+            cluster_assignments: np.ndarray
+                A 1D array of length(observations) that holds the cluster assignment for each observation
+
+        outputs:
+            float
+                The mean-squared error between observations and their corresponding cluster center
+
+        """
+        distances = np.ndarray((0,1)) #distances between observations and their cluster centroid will go in here
+        for cluster in range(1,self.k+1):
+            this_cluster_data = mat[cluster_assignments == cluster,] #get rows with observations assigned to current cluster
+            centroid_vector = centroid_mat[cluster - 1,] #get coordinates of corresponding cluster centroid
+
+            #get distance (error) between observations assigned to this cluster and cluster centroid and append 
+            #to list of distances for observations corresponding to other clusters
+            distances = np.concatenate([cdist(this_cluster_data,np.reshape(centroid_vector,(1,4)),metric = self._metric),distances])
+
+        return np.mean(distances**2)
+    
+    
+    def _check_dimensions(self,mat: np.ndarray):
+        """
+        Checks that the input matrix `mat` has the correct number of features (columns) for comparisons to be made against the cluster centroids.
+        For example, if the model is fitted on a dataset with 5 dimensions, the cluster centroids will be in a 5D space. Attempting to perform some operation,
+        such as predictions, on a dataset with less than or more than 5 features will cause this method to raise an error.
+        
+        inputs: 
+            mat: np.ndarray
+                A 2D matrix where the rows are observations and columns are features
+        """
+        
+        #### Check that the input matrix `mat` has the same number of features as the fitted centroid vectors.
+
+        if self._centroid_locations.shape[1] != mat.shape[1]:
+                raise AssertionError(f"The number of features in your new data do not match the number of features model was fitted on")
+        
+                                       
 
     
     def fit(self, mat: np.ndarray):
@@ -75,10 +125,14 @@ class KMeans:
         iter_num = 0
         centroid_mat = np.ndarray(shape=(self.k,mat.shape[1])) #initialize an empty matrix with k rows and (# of features) columns to store each cluster's centroid
         
+        
+        
+        self.convergence_status = "Max iter reached" #if this is not overwritten below, that means KMeans did not converge and only stopped because max_iter was reached
         while iter_num <= self._max_iter:
             
             if iter_num > 0:
-                previous_mse = _MSE(mat,centroid_mat,cluster_assignments)
+                #get previous mse before overwriting centroid_mat and cluster_assignments
+                previous_mse = self._MSE(mat,centroid_mat,cluster_assignments)
             
             #compute each cluster's centroid and store it as a row in centroid_mat
             for cluster in range(1,self.k+1):
@@ -93,20 +147,30 @@ class KMeans:
             
             
             if iter_num > 0:
-                current_mse = _MSE(mat,centroid_mat,new_cluster_assignments)
-            
-            if np.array_equal(new_cluster_assignments,cluster_assignments): #strict convergence check; stop if cluster assignments aren't changing
-                break
-            elif abs(previous_mse - current_mse) <= self._tol: # soft convergence check
-                break
-            else:
-                cluster_assignments = new_cluster_assignments 
+                #get current mse with new centroid mat and new cluster assignments
+                current_mse = self._MSE(mat,centroid_mat,new_cluster_assignments)
                 
+                #check for convergence
+                if np.array_equal(new_cluster_assignments,cluster_assignments): #strict convergence check; stop if cluster assignments aren't changing
+                    self.convergence_status = "Strict Convergence"
+                    break
+                elif abs(previous_mse - current_mse) <= self._tol: # soft convergence check
+                    self.convergence_status = "Soft Convergence"
+                    break
+                    
+            cluster_assignments = new_cluster_assignments 
             iter_num +=1
-            
+        
+        
+        self.fitted = True
+        print(self.convergence_status)
+        
+        #save some of the results and training data as a private attribute to be accessed easily by other methods
         self._centroid_locations = centroid_mat
         self._training_clusters = new_cluster_assignments
-        self.fitted = True
+        self._training_mat = mat
+        
+        
         return self
     
     
@@ -117,7 +181,8 @@ class KMeans:
 
         inputs: 
             mat: np.ndarray
-                A 2D matrix where the rows are observations and columns are features
+                A 2D matrix where the rows are observations and columns are features.
+                
 
         outputs:
             np.ndarray
@@ -125,7 +190,7 @@ class KMeans:
         """
 
         if self.fitted:
-            _check_dimensions() # Check that the input matrix `mat` has the same number of features as the fitted centroid vectors.
+            self._check_dimensions(mat) # Check that the input matrix `mat` has the same number of features as the fitted centroid vectors.
                 
                 
             #assign each observation to the cluster with the closest centroid:
@@ -138,13 +203,15 @@ class KMeans:
         else:
             raise AssertionError(f"You must fit the model before attempting any predictions")
 
-    def get_error(self, mat:np.ndarray) -> float:
+    def get_error(self, mat:np.ndarray = None) -> float:
         """
         returns the final mean-squared distance of the fitted model with respect to the data in `mat`
         
         inputs:
             mat: np.ndarray
                 A 2D matrix where the rows are observations and columns are features
+                By default this will use the training data and therefore output the training MSE unless a different
+                mat is provided
 
         outputs:
             float
@@ -152,8 +219,11 @@ class KMeans:
                 in the fitted model.
         """
         if self.fitted:
-            _check_dimensions() #Check that the input matrix `mat` has the same number of features as the fitted centroid vectors.
-            return _MSE(mat, self._centroid_locations,self._training_clusters)
+            
+            if mat is None:
+                mat = self._training_mat
+            self._check_dimensions(mat) #Check that the input matrix `mat` has the same number of features as the fitted centroid vectors.
+            return self._MSE(mat, self._centroid_locations,self._training_clusters)
 
         else:
             raise AssertionError(f"You must fit the model to get the cluster centroids")
@@ -175,49 +245,3 @@ class KMeans:
             raise AssertionError(f"You must fit the model to get the cluster centroids")
             
             
-    def _MSE(self, mat: np.ndarray, centroid_mat: np.ndarray,cluster_assignments:np.ndarray):
-        """
-        Calculates Mean squared error between observations and their corresponding cluster centers
-        
-        inputs: 
-            mat: np.ndarray
-                A 2D matrix where the rows are observations and columns are features
-            centroid_mat: np.ndarray
-                A 2D matrix with k rows and mat.shape[1] columns where each rows is a clusters centroid vector. 
-            cluster_assignments: np.ndarray
-                A 1D array of length(observations) that holds the cluster assignment for each observation
-
-        outputs:
-            float
-                The mean-squared error between observations and their corresponding cluster center
-            
-        """
-        distances = np.ndarray((0,1)) #distances between observations and their cluster centroid will go in here
-        for cluster in range(1,self.k+1):
-            this_cluster_data = mat[cluster_assignments == cluster,] #get rows with observations assigned to current cluster
-            centroid_vector = centroid_mat[cluster - 1,] #get coordinates of corresponding cluster centroid
-            
-            #get distance (error) between observations assigned to this cluster and cluster centroid and append 
-            #to list of distances for observations corresponding to other clusters
-            distances = np.concatenate([cdist(this_cluster_data,np.reshape(centroid_vector,(1,4)),metric = self._metric),distances])
-            
-        return np.mean(distances**2)
-    
-    
-    def _check_dimensions(self,mat: np.ndarray):
-        """
-        Checks that the input matrix `mat` has the correct number of features (columns) for comparisons to be made against the cluster centroids.
-        For example, if the model is fitted on a dataset with 5 dimensions, the cluster centroids will be in a 5D space. Attempting to perform some operation,
-        such as predictions, on a dataset with less than or more than 5 features will cause this method to raise an error.
-        
-        inputs: 
-            mat: np.ndarray
-                A 2D matrix where the rows are observations and columns are features
-        """
-        
-        #### Check that the input matrix `mat` has the same number of features as the fitted centroid vectors.
-
-        if self._centroid_locations.shape[1] != mat.shape[1]:
-                raise AssertionError(f"The number of features in your new data do not match the number of features model was fitted on")
-        
-                                       
