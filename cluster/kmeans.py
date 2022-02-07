@@ -286,7 +286,7 @@ class KMeans:
         centroid_idxs = [random_point[0]] #initialize list that will hold the row idx in `mat` the centroid was in, to prevent its use in steps 2-4
         
         #begin computing the rest of the centroids
-        for cluster in range(1,self.k+1):
+        for cluster in range(1,self.k):
             non_centroid_points = [x for x in range(mat.shape[0]) if x not in centroid_idxs] #all other rows in `mat` besides those already being used as centroids
             filtered_mat = mat[non_centroid_points,]
             #1) Compute distance between all non-centroid points and each centroid
@@ -302,7 +302,7 @@ class KMeans:
                 centroid_mat, centroid_idxs = self._find_next_centroid(filtered_mat,distances,centroid_idxs,centroid_mat,cluster)
 
                         
-            return centroid_mat
+        return centroid_mat
 
 
     def _find_next_centroid(self, filtered_mat:np.ndarray,distances:np.ndarray,centroid_idxs:list,centroid_mat:np.ndarray,cluster:int):
