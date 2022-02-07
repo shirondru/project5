@@ -140,13 +140,7 @@ class KMeans:
         
         self.convergence_status = "Max iter reached" #if this is not overwritten below, that means KMeans did not converge and only stopped because max_iter was reached
         while iter_num <= self._max_iter:
-            plt.scatter(
-                mat[:,0], 
-                mat[:,1], 
-                c=cluster_assignments)
-            plt.scatter(centroid_mat[:,0],centroid_mat[:,1],c='red')
-            plt.show()
-            plt.close()
+            
             
             if iter_num > 0:
                 #get previous mse before overwriting centroid_mat and cluster_assignments
@@ -292,7 +286,7 @@ class KMeans:
         centroid_idxs = [random_point[0]] #initialize list that will hold the row in `mat` the centroid was in, to prevent its use in steps 2-4
         
         #begin computing the rest of the centroids
-        for cluster in range(1,k+1):
+        for cluster in range(1,self.k+1):
             non_centroid_points = [x for x in range(mat.shape[0]) if x not in centroid_idxs] #all other rows in `mat` besides those already being used as centroids
             
             #1) Compute distance between all non-centroid points and each centroid
@@ -315,9 +309,6 @@ class KMeans:
                     else:
                         shift +=1
                 centroid_idxs.append(new_centroid_idx + shift)
-                print(new_centroid)
-                print(mat[new_centroid_idx + shift,])
-                print('*'*20)
                 assert(np.array_equal(mat[new_centroid_idx + shift,],new_centroid))
                         
                
