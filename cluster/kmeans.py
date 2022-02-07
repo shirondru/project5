@@ -103,7 +103,8 @@ class KMeans:
                 
                 
                 
-        Initialize a matrix (dim = k,features), `centroid_mat`, to store each of the k clusters' centroid vector
+        What this method is doing:
+        1. Initialize a matrix (dim = k,features), `centroid_mat`, to store each of the k clusters' centroid vector
             2a. Do this by selecting k random points from `mat`, without replacement.
         2. Assign each data point to one of the k clusters based on which centroid it is closest to. Store these cluster assignments in `cluster_assignments`
         3. Until the max iterations is reached or the cluster assignments stop changing:
@@ -121,6 +122,7 @@ class KMeans:
                 ca. Break the loop if the algorithm has converged. The current centroid vectors in `centroid_mat` are the final coordinates for the centroids for each cluster
                 cb. If there is no convergence, overwrite `cluster_assignments` with the cluster assignments in `new_cluster_assignments` to calculate new centroids and check if the next iteration has converged
                 
+        
         """
         
         
@@ -128,8 +130,7 @@ class KMeans:
         iter_num = 0
         
         ##### Randomly initialize centroids. Each cluster's centroid is stored as a row ######
-        #Random initialization is done by randomly selecting k rows from mat to serve as the k data points randomly selected to be the initial cluster centroids
-        centroid_mat = mat[np.random.choice(mat.shape[0], self.k, replace=False), :] 
+        centroid_mat = self._centroid_init(mat)
         
         ####### assign all points to closest custer centroid ########
         #use np.argmin to get index of centroid with minimum  distance to that observation
@@ -139,6 +140,13 @@ class KMeans:
         
         self.convergence_status = "Max iter reached" #if this is not overwritten below, that means KMeans did not converge and only stopped because max_iter was reached
         while iter_num <= self._max_iter:
+            plt.scatter(
+                mat[:,0], 
+                mat[:,1], 
+                c=cluster_assignments)
+            plt.scatter(centroid_mat[:,0],centroid_mat[:,1],c='red')
+            plt.show()
+            plt.close()
             
             if iter_num > 0:
                 #get previous mse before overwriting centroid_mat and cluster_assignments
@@ -251,5 +259,92 @@ class KMeans:
             return self._centroid_locations
         else:
             raise AssertionError(f"You must fit the model to get the cluster centroids")
+            
+            
+    def _centroid_init(self,mat: np.ndarray):
+        """
+        
+        Initializes cluster centroids in a smart way to reduce possibility of poor clustering.
+        Initialization is done as follows:
+        1) First cluster centroid is chosen randomly from one of the data points in mat
+        2) Compute the distance from each point (except the point used for the first centroid) to the closest centroid, for all centroids that have been already initialized
+        3) Choose the point that is farthest from its nearest centroid as the next centroid
+        4) Repeat 2 and 3 
+        
+        
+        Reference: https://en.wikipedia.org/wiki/K-means%2B%2B
+        
+        inputs:
+            mat: np.ndarray
+                A 2D matrix where the rows are observations and columns are features
+        outputs:
+            centroid_mat: np.ndarray
+            a `k x m` 2D matrix representing initial cluster centroids
+        
+        """
+        #initialize 2D array to hold centroids in
+        centroid_mat = np.ndarray(shape = (self.k,mat.shape[1]))
+        
+        ##Choose first cluster randomly
+        random_point = np.random.choice(mat.shape[0], 1, replace=False)
+        centroid_mat[0,:] = mat[random_point, :] 
+        
+        centroid_idxs = [random_point[0]] #initialize list that will hold the row in `mat` the centroid was in, to prevent its use in steps 2-4
+        
+        #begin computing the rest of the centroids
+        for cluster in range(1,k+1):
+            non_centroid_points = [x for x in range(mat.shape[0]) if x not in centroid_idxs] #all other rows in `mat` besides those already being used as centroids
+            
+            #1) Compute distance between all non-centroid points and each centroid
+            #2) For each point, keep the distance between it and the closest centroid
+            #3) Of those remaining minimum distances, make the maximum one the next centroid; this is the point that is farthest from it's nearest centroid
+            if len(centroid_idxs) == 1: #if only 1 centroid has been defined, reshape that centroid vector to be 2D and compatible with cdist()
+                filtered_mat = mat[non_centroid_points,]
+                distances = cdist(filtered_mat,centroid_mat[0:len(centroid_idxs),].reshape(1,mat.shape[1]))               
+                min_distances_idxs = np.argmin(distances,axis=1)
+                min_distances = distances[np.arange(len(distances)),np.argmin(distances,axis=1)]
+                new_centroid_idx = np.argmax(min_distances)
+                new_centroid = filtered_mat[new_centroid_idx,]
+                centroid_mat[cluster,] = new_centroid
+                
+                #current new_centroid_idx might be shifted in `mat` because point(s) only non_centroid_points were used
+                shift = 0
+                for centroid_idx in centroid_idxs:
+                    if new_centroid_idx < centroid_idx:
+                        continue
+                    else:
+                        shift +=1
+                centroid_idxs.append(new_centroid_idx + shift)
+                print(new_centroid)
+                print(mat[new_centroid_idx + shift,])
+                print('*'*20)
+                assert(np.array_equal(mat[new_centroid_idx + shift,],new_centroid))
+                        
+               
+            else: #otherwise 
+                filtered_mat = mat[non_centroid_points,]
+                distances = cdist(filtered_mat,centroid_mat[0:len(centroid_idxs),])
+                min_distances_idxs = np.argmin(distances,axis=1)
+                min_distances = distances[np.arange(len(distances)),np.argmin(distances,axis=1)]
+                new_centroid_idx = np.argmax(min_distances)
+                new_centroid = filtered_mat[new_centroid_idx,]
+                
+                centroid_mat[cluster,] = new_centroid
+                
+                #current new_centroid_idx might be shifted in `mat` because point(s) only non_centroid_points were used
+                shift = 0
+                for centroid_idx in centroid_idxs:
+                    if new_centroid_idx < centroid_idx:
+                        continue
+                    else:
+                        shift +=1
+                centroid_idxs.append(new_centroid_idx + shift)
+                assert(np.array_equal(mat[new_centroid_idx + shift,],new_centroid))
+                        
+            return centroid_mat
+                       
+                       
+                       
+   
             
             
