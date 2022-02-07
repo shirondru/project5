@@ -258,11 +258,11 @@ class KMeans:
     def _centroid_init(self,mat: np.ndarray):
         """
         
-        Initializes cluster centroids in a smart way to reduce possibility of poor clustering.
+        Initializes cluster centroids in a smart way to reduce possibility of poor clustering due to poor centroid initialization. 
         Initialization is done as follows:
         1) First cluster centroid is chosen randomly from one of the data points in mat
-        2) Compute the distance from each point (except the point used for the first centroid) to the closest centroid, for all centroids that have been already initialized
-        3) Choose the point that is farthest from its nearest centroid as the next centroid
+        2) Compute the distance from each point (except any point used as a centroid) to the closest centroid, for all centroids that have been already initialized
+        3) Choose the point that is farthest from its nearest centroid as the next centroid. This specific step is done in self._find_next_centroid
         4) Repeat 2 and 3 
         
         
@@ -279,60 +279,86 @@ class KMeans:
         #initialize 2D array to hold centroids in
         centroid_mat = np.ndarray(shape = (self.k,mat.shape[1]))
         
-        ##Choose first cluster randomly
+        ##Choose first cluster randomly and put centroid coordinates for this cluster into first row of centroid_mat
         random_point = np.random.choice(mat.shape[0], 1, replace=False)
         centroid_mat[0,:] = mat[random_point, :] 
         
-        centroid_idxs = [random_point[0]] #initialize list that will hold the row in `mat` the centroid was in, to prevent its use in steps 2-4
+        centroid_idxs = [random_point[0]] #initialize list that will hold the row idx in `mat` the centroid was in, to prevent its use in steps 2-4
         
         #begin computing the rest of the centroids
         for cluster in range(1,self.k+1):
             non_centroid_points = [x for x in range(mat.shape[0]) if x not in centroid_idxs] #all other rows in `mat` besides those already being used as centroids
-            
+            filtered_mat = mat[non_centroid_points,]
             #1) Compute distance between all non-centroid points and each centroid
-            #2) For each point, keep the distance between it and the closest centroid
+            #2) For each point, keep the distance between it and its closest centroid
             #3) Of those remaining minimum distances, make the maximum one the next centroid; this is the point that is farthest from it's nearest centroid
             if len(centroid_idxs) == 1: #if only 1 centroid has been defined, reshape that centroid vector to be 2D and compatible with cdist()
-                filtered_mat = mat[non_centroid_points,]
-                distances = cdist(filtered_mat,centroid_mat[0:len(centroid_idxs),].reshape(1,mat.shape[1]))               
-                min_distances_idxs = np.argmin(distances,axis=1)
-                min_distances = distances[np.arange(len(distances)),np.argmin(distances,axis=1)]
-                new_centroid_idx = np.argmax(min_distances)
-                new_centroid = filtered_mat[new_centroid_idx,]
-                centroid_mat[cluster,] = new_centroid
-                
-                #current new_centroid_idx might be shifted in `mat` because point(s) only non_centroid_points were used
-                shift = 0
-                for centroid_idx in centroid_idxs:
-                    if new_centroid_idx < centroid_idx:
-                        continue
-                    else:
-                        shift +=1
-                centroid_idxs.append(new_centroid_idx + shift)
-                assert(np.array_equal(mat[new_centroid_idx + shift,],new_centroid))
+                distances = cdist(filtered_mat,centroid_mat[0:len(centroid_idxs),].reshape(1,mat.shape[1]))  #distance between all datapoints and all initialzied centroids              
+                centroid_mat, centroid_idxs = self._find_next_centroid(filtered_mat,distances,centroid_idxs,centroid_mat,cluster)
                         
                
-            else: #otherwise 
-                filtered_mat = mat[non_centroid_points,]
-                distances = cdist(filtered_mat,centroid_mat[0:len(centroid_idxs),])
-                min_distances_idxs = np.argmin(distances,axis=1)
-                min_distances = distances[np.arange(len(distances)),np.argmin(distances,axis=1)]
-                new_centroid_idx = np.argmax(min_distances)
-                new_centroid = filtered_mat[new_centroid_idx,]
-                
-                centroid_mat[cluster,] = new_centroid
-                
-                #current new_centroid_idx might be shifted in `mat` because point(s) only non_centroid_points were used
-                shift = 0
-                for centroid_idx in centroid_idxs:
-                    if new_centroid_idx < centroid_idx:
-                        continue
-                    else:
-                        shift +=1
-                centroid_idxs.append(new_centroid_idx + shift)
-                assert(np.array_equal(mat[new_centroid_idx + shift,],new_centroid))
+            else: 
+                distances = cdist(filtered_mat,centroid_mat[0:len(centroid_idxs),]) #not reshaping because centroid_mat will be 2D because len(centroid_idxs) > 1
+                centroid_mat, centroid_idxs = self._find_next_centroid(filtered_mat,distances,centroid_idxs,centroid_mat,cluster)
+
                         
             return centroid_mat
+
+
+    def _find_next_centroid(self, filtered_mat:np.ndarray,distances:np.ndarray,centroid_idxs:list,centroid_mat:np.ndarray,cluster:int):
+        """
+        Finds the next point to be used as an initial centroid by finding the point with the maximum distance to its closest centroid
+        Here is what the method is doing:
+        1. Takes `distance` matrix and, for each row, saves column index corresponding with the minimum distance in that row. In other words, for each data point, it saves the column index corresponding
+        to the cluster centroid from which that data point was closest to. Use these indices to grab the minimum cluster distance for each point from distances. Save these minimum distances in a 1D array 
+        called `min_distances`
+        2. Get the index in `min_distances` corresponding to the longest distance between a point and it's closest centroid
+        3. Get precise centroid vector coordinates of this new centroid from filtered_mat. Save these coordinates in `centroid_mat`
+        4. To ensure this point isn't used to compute a future centroid, find it's index in `mat` and store it in the list `centroid_idxs`. Within self._centroid_init, this list will
+        ensure that this point is not used for any further computations, thereby speeding up computation and ensuring this point (or any other centroids) isn't accidentally chosen to be a centroid more than once.
+            4a. The index of this point in `mat` might be shifted relative to `new_centroid_idx`, because `new_centroid_idx` comes from `filtered_mat`, which is the same as `mat` but has had some rows removed.
+            If those rows idxs are less than `new_centroid_idx`, it's position in `mat` will be at the same idx. For example, if `new_centroid_idx` == 5 but row 35 has already been removed from `mat`, then 
+            the new point came from row 5 in `mat`. But if `new_centroid_idx` == 57 and row 35 has been removed from `mat` then the new point really came from index 58 in `mat`. 
+
+
+        inputs:
+            filtered_mat: np.ndarray
+                A 2D matrix where the rows are observations and columns are features. Includes all the rows in `mat` except those corresponding to points
+                already chosen to be the initial cluster centroids
+            distances: np.ndarray
+                a 2D matrix with the same number of rows as filtered_mat. There is one column for each initialized centroid. Each element in this matrix represents the distance between a particular point
+                and a particular cluster centroid.
+            centroid_idxs: list
+                a list with up to k-1 elements. Each element in the list corresponds to the row index in `mat` used to define an initial centroid. In other words, the indices in `mat` corresponding to the data points
+                used to define the currently initialized centroids
+            centroid_mat: np.ndarray
+                a  2D matrix with currently initialized cluster centroids
+            cluster: int
+                an int between 1 and k corresponding to the current cluster centroid being found
+        outputs:
+            centroid_mat: np.ndarray
+                a  2D matrix with currently initialized cluster centroids
+            centroid_idxs: list
+                 a list with up to k-1 elements. Each element in the list corresponds to the row index in `mat` used to define an initial centroid. In other words, the indices in `mat` corresponding to the data points
+                used to define the currently initialized centroids
+
+        
+        """
+        min_distances = distances[np.arange(len(distances)),np.argmin(distances,axis=1)]
+        new_centroid_idx = np.argmax(min_distances)# index of point which has the largest distance to closest centroid. This point will be next centroid
+        centroid_mat[cluster,] = filtered_mat[new_centroid_idx,] #save this point's coordinates for use as centroid.
+        
+        
+        #current new_centroid_idx might be shifted in `mat` because point(s) only non_centroid_points were used
+        shift = 0
+        for centroid_idx in centroid_idxs:
+            if new_centroid_idx < centroid_idx:
+                continue
+            else:
+                shift +=1
+        centroid_idxs.append(new_centroid_idx + shift)
+        # assert(np.array_equal(mat[new_centroid_idx + shift,],new_centroid))
+        return centroid_mat, centroid_idxs
                        
                        
                        
