@@ -57,7 +57,7 @@ class Silhouette:
             mean_intra_distance = np.sum(intra_distances) / (intra_distances.shape[1] - 1) #intra_distance includes the distance of current obs to itself, so divide by length of points in the cluster minus one to not include that in the average
 
             #### Get distance between current point and closest label/cluster centroid
-            other_cluster_centroid_rows = [x for x in range(len(unique_labs)) if x != unique_labs.index(obs_label)] #this is a list corresponding to all other centroid rows in centroid_mat
+            other_cluster_centroid_rows = [x for x in range(len(unique_labels)) if x != unique_labels.index(obs_label)] #this is a list corresponding to all other centroid rows in centroid_mat
             other_cluster_centroids = centroid_mat[other_cluster_centroid_rows,] 
             inter_distances  = cdist(obs_data, other_cluster_centroids) #distance between current point and all other label/cluster centrouds
             nearest_centroid_idx = np.argmin(inter_distances) 
