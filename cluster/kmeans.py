@@ -128,6 +128,8 @@ class KMeans:
         
         """
         
+        if self.k >= mat.shape[0]:
+            raise ValueError("k is greater than or equal to your number of observations. Clustering so few data points with this many clusters doesn't make sense!")
         
         np.random.seed(self.random_state)
         iter_num = 0
@@ -139,7 +141,7 @@ class KMeans:
         #use np.argmin to get index of centroid with minimum  distance to that observation
         #add 1 to convert index to cluster (i.e, index 0 ==> cluster 1)
         cluster_assignments = np.argmin(cdist(mat,centroid_mat,metric = self._metric),axis = 1) + 1
-        
+
         
         self.convergence_status = "Max iter reached" #if this is not overwritten below, that means KMeans did not converge and only stopped because max_iter was reached
         while iter_num <= self._max_iter:
@@ -152,7 +154,8 @@ class KMeans:
             ####### recompute each cluster's centroid and store it as a row in centroid_mat ########
             for cluster in range(1,self.k+1):
                 this_cluster_data = mat[cluster_assignments == cluster,] #get rows with observations assigned to current cluster
-                centroid_mat[cluster - 1,] = this_cluster_data.mean(axis=0) #new centroid for this cluster is a vector with mean of each feature column as its components
+                if this_cluster_data.shape[0] > 0: #if there are observations assigned to this cluster, update it. Otherwise don't or you will get a divide by 0 error.
+                    centroid_mat[cluster - 1,] = this_cluster_data.mean(axis=0) #new centroid for this cluster is a vector with mean of each feature column as its components
 
 
             ####### reassign points to closest cluster centroid after re-calculating each cluster's centroid #######
@@ -266,7 +269,7 @@ class KMeans:
         Initialization is done as follows:
         1) First cluster centroid is chosen randomly from one of the data points in mat
         2) Compute the distance from each point (except any point used as a centroid) to the closest centroid, for all centroids that have been already initialized
-        3) Choose the point that is farthest from its nearest centroid as the next centroid. This specific step is done in self._find_next_centroid
+        3) Choose the point that is farthest from its nearest centroid as the next centroid. This specific step is done in self._find_next_init_centroid
         4) Repeat 2 and 3 
         
         
@@ -298,18 +301,18 @@ class KMeans:
             #3) Of those remaining minimum distances, make the maximum one the next centroid; this is the point that is farthest from it's nearest centroid
             if len(centroid_idxs) == 1: #if only 1 centroid has been defined, reshape that centroid vector to be 2D and compatible with cdist()
                 distances = cdist(filtered_mat,centroid_mat[0:len(centroid_idxs),].reshape(1,mat.shape[1]))  #distance between all datapoints and all initialzied centroids              
-                centroid_mat, centroid_idxs = self._find_next_centroid(filtered_mat,distances,centroid_idxs,centroid_mat,cluster)
+                centroid_mat, centroid_idxs = self._find_next_init_centroid(filtered_mat,distances,centroid_idxs,centroid_mat,cluster)
                         
                
             else: 
                 distances = cdist(filtered_mat,centroid_mat[0:len(centroid_idxs),]) #not reshaping because centroid_mat will be 2D because len(centroid_idxs) > 1
-                centroid_mat, centroid_idxs = self._find_next_centroid(filtered_mat,distances,centroid_idxs,centroid_mat,cluster)
+                centroid_mat, centroid_idxs = self._find_next_init_centroid(filtered_mat,distances,centroid_idxs,centroid_mat,cluster)
 
                         
         return centroid_mat
 
 
-    def _find_next_centroid(self, filtered_mat:np.ndarray,distances:np.ndarray,centroid_idxs:list,centroid_mat:np.ndarray,cluster:int):
+    def _find_next_init_centroid(self, filtered_mat:np.ndarray,distances:np.ndarray,centroid_idxs:list,centroid_mat:np.ndarray,cluster:int):
         """
         Finds the next point to be used as an initial centroid by finding the point with the maximum distance to its closest centroid
         Here is what the method is doing:
@@ -367,5 +370,4 @@ class KMeans:
                        
                        
    
-            
             
