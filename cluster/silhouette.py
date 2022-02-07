@@ -23,6 +23,21 @@ class Silhouette:
         """
         calculates the silhouette score for each of the observations
 
+        What this method is doing:
+        1. initialize a 1D array that will hold all Silhouette scores for each point, in the same order as the points themselves were given
+        2. Grab the unique labels/clusters from y
+        3. initialize a 2D array, `centroid_mat` that will hold each label's centroid
+        4. Loop through each of the unique labels and calculate that label's centroid and store it in `centroid_mat`
+            4a. Find centroid by taking the mean of each feature across all observations that have that label
+        5. Loop through all observations and get the mean distance between that point and all other points in the same cluster. Also get the distance between the current point and the closest cluster centroid
+            5a. Use cdist to get distances between current point and all points with the same label. This includes the distance between the current point and itself
+                5ab. The distance between the current point and itself = 0, so to get the mean distance between current point and other points in the same cluster sum the distances and divide by # of points in the cluster - 1
+            5b. Grab the centroid vectors for all centroids except the one from the same cluster as the current point from `centroid_mat`. Calculate the distance between the current point and all the other centroids using cdist.
+            Save the distance from the point to its closest centroid (from a different cluster)
+            5c. Calculate the silhouette score for this point
+            5d. save the score in the 1D array, `scores`. Order will be preserved
+        
+
         inputs:
             X: np.ndarray
                 A 2D matrix where the rows are observations and columns are features. 
@@ -31,7 +46,7 @@ class Silhouette:
                 a 1D array representing the cluster labels for each of the observations in `X`
 
         outputs:
-            np.ndarray
+            scores: np.ndarray
                 a 1D array with the silhouette scores for each of the observations in `X`
         """
         self._check_dimensions(X,y) #check you have a label for every observation
