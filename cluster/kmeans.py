@@ -1,7 +1,6 @@
 import numpy as np
 from scipy.spatial.distance import cdist
 import random
-
 class KMeans:
     def __init__(
             self,
@@ -27,7 +26,7 @@ class KMeans:
         self.random_state = random_state
         
         
-        possible_metrics = [ #possible metrics supported by scipy.spatial.distance
+        possible_metrics = [
          'braycurtis', 'canberra', 'chebyshev', 'cityblock', 'correlation', 'cosine', 
          'dice', 'euclidean', 'hamming', 'jaccard', 'jensenshannon', 'kulsinski', 'mahalanobis', 
          'matching', 'minkowski', 'rogerstanimoto', 'russellrao', 'seuclidean', 'sokalmichener', 'sokalsneath', 
@@ -57,6 +56,12 @@ class KMeans:
                 The mean-squared error between observations and their corresponding cluster center
 
         """
+        
+        if centroid_mat.shape[1] != mat.shape[1]:
+                raise AssertionError(f"The number of features in the data do not match the number of features model was fitted on")
+        
+                                
+        
         distances = np.ndarray((0,1)) #distances between observations and their cluster centroid will go in here
         for cluster in range(1,self.k+1):
             this_cluster_data = mat[cluster_assignments == cluster,] #get rows with observations assigned to current cluster
@@ -64,7 +69,7 @@ class KMeans:
 
             #get distance (error) between observations assigned to this cluster and cluster centroid and append 
             #to list of distances for observations corresponding to other clusters
-            distances = np.concatenate([cdist(this_cluster_data,np.reshape(centroid_vector,(1,4)),metric = self._metric),distances])
+            distances = np.concatenate([cdist(this_cluster_data,np.reshape(centroid_vector,(1,mat.shape[1])),metric = self._metric),distances])
 
         return np.mean(distances**2)
     
@@ -98,9 +103,9 @@ class KMeans:
                 
                 
                 
-        What this method is doing:
-        1. Assign each observation to one of k clusters randomly in the array `cluster_assignments`
-        2. Initialize an empty matrix (dim = k,features), `centroid_mat`, to store each the k clusters' centroid vector
+        Initialize a matrix (dim = k,features), `centroid_mat`, to store each of the k clusters' centroid vector
+            2a. Do this by selecting k random points from `mat`, without replacement.
+        2. Assign each data point to one of the k clusters based on which centroid it is closest to. Store these cluster assignments in `cluster_assignments`
         3. Until the max iterations is reached or the cluster assignments stop changing:
             a. Overwrite `centroid_mat` by introducing each cluster's centroid into a row of centroid_mat. The centroid for cluster 1 goes into row 0
                 aa. The centroid is calculated by taking the mean of each feature across all observations currently assigned to that cluster. These means form each component of the centroid vector
@@ -116,15 +121,20 @@ class KMeans:
                 ca. Break the loop if the algorithm has converged. The current centroid vectors in `centroid_mat` are the final coordinates for the centroids for each cluster
                 cb. If there is no convergence, overwrite `cluster_assignments` with the cluster assignments in `new_cluster_assignments` to calculate new centroids and check if the next iteration has converged
                 
-        
         """
         
         
-        random.seed(self.random_state)
-        cluster_assignments = np.fromiter((random.randint(1,self.k) for obs in range(mat.shape[0])),int) #initialize clusters by randomly assigning each observation to one of k clusters
+        np.random.seed(self.random_state)
         iter_num = 0
-        centroid_mat = np.ndarray(shape=(self.k,mat.shape[1])) #initialize an empty matrix with k rows and (# of features) columns to store each cluster's centroid
         
+        ##### Randomly initialize centroids. Each cluster's centroid is stored as a row ######
+        #Random initialization is done by randomly selecting k rows from mat to serve as the k data points randomly selected to be the initial cluster centroids
+        centroid_mat = mat[np.random.choice(mat.shape[0], self.k, replace=False), :] 
+        
+        ####### assign all points to closest custer centroid ########
+        #use np.argmin to get index of centroid with minimum  distance to that observation
+        #add 1 to convert index to cluster (i.e, index 0 ==> cluster 1)
+        cluster_assignments = np.argmin(cdist(mat,centroid_mat,metric = self._metric),axis = 1) + 1
         
         
         self.convergence_status = "Max iter reached" #if this is not overwritten below, that means KMeans did not converge and only stopped because max_iter was reached
@@ -134,16 +144,14 @@ class KMeans:
                 #get previous mse before overwriting centroid_mat and cluster_assignments
                 previous_mse = self._MSE(mat,centroid_mat,cluster_assignments)
             
-            #compute each cluster's centroid and store it as a row in centroid_mat
+            ####### recompute each cluster's centroid and store it as a row in centroid_mat ########
             for cluster in range(1,self.k+1):
                 this_cluster_data = mat[cluster_assignments == cluster,] #get rows with observations assigned to current cluster
                 centroid_mat[cluster - 1,] = this_cluster_data.mean(axis=0) #new centroid for this cluster is a vector with mean of each feature column as its components
-                
-            #assign each observation to the cluster with the closest centroid.
-            #use np.argmin to get index of centroid with minimum  distance to that observation
-            #add 1 to convert index to cluster (i.e, index 0 ==> cluster 1)
+
+
+            ####### reassign points to closest cluster centroid after re-calculating each cluster's centroid #######
             new_cluster_assignments = np.argmin(cdist(mat,centroid_mat,metric = self._metric),axis = 1) + 1
-            
             
             
             if iter_num > 0:
@@ -243,4 +251,5 @@ class KMeans:
             return self._centroid_locations
         else:
             raise AssertionError(f"You must fit the model to get the cluster centroids")
+            
             
