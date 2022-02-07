@@ -1,0 +1,21 @@
+[build-system]
+requires = ["flit_core >=3.2,<4"]
+build-backend = "flit_core.buildapi"
+
+[project]
+name = "cluster"
+authors = [{name = "Shiron Drusinsky", email = "shiron.drusinsky@ucsf.edu"}]
+readme = "README.md"
+license = {file = "LICENSE"}
+classifiers = ["License :: OSI Approved :: MIT License"]
+dynamic = ["version", "description"]
+dependencies = [
+	"pytest>=6.2.5",
+	"numpy>=1.20.3",
+	"scipy>=1.7.3"
+	"matplotlib>=3.4.3"
+
+]
+
+[project.urls]
+Home = "https://github.com/shirondru/project5"
