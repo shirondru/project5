@@ -20,6 +20,9 @@ class KMeans:
             max_iter: int
                 the maximum number of iterations before quitting model fit
         """
+        if k <= 0:
+            raise AttributeError(f"k must be greater than 0. Desired k: {k}")
+
         self.k = k
         self._tol = tol
         self._max_iter = max_iter
@@ -179,6 +182,7 @@ class KMeans:
         self._centroid_locations = centroid_mat
         self._training_clusters = new_cluster_assignments
         self._training_mat = mat
+        self._training_mse = current_mse
         
         
         return self
@@ -220,8 +224,8 @@ class KMeans:
         inputs:
             mat: np.ndarray
                 A 2D matrix where the rows are observations and columns are features
-                By default this will use the training data and therefore output the training MSE unless a different
-                mat is provided
+                If no mat is provided then this will return training error of the final fitted model on the data it was fit on
+                If a mat is provided then this will return the error of the fitted model on the new data
 
         outputs:
             float
@@ -231,7 +235,7 @@ class KMeans:
         if self.fitted:
             
             if mat is None:
-                mat = self._training_mat
+                return self.__training_mse
             self._check_dimensions(mat) #Check that the input matrix `mat` has the same number of features as the fitted centroid vectors.
             return self._MSE(mat, self._centroid_locations,self._training_clusters)
 
