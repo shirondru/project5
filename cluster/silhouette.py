@@ -54,9 +54,8 @@ class Silhouette:
             obs_data = X[obs,].reshape(1,X.shape[1]) #reshape to 2D array for cdist compatibility
             rest_of_cluster_data = X[obs_in_cluster,]
             intra_distances = cdist(obs_data,rest_of_cluster_data,metric = self._metric) #get distance between this obs and all obs with same label
-            intra_distances = np.delete(intra_distances,obs) #remove the distance of the current observation to itself
-            mean_intra_distance = np.mean(intra_distances)
-            
+            mean_intra_distance = np.sum(intra_distances) / (intra_distances.shape[1] - 1) #intra_distance includes the distance of current obs to itself, so divide by length of points in the cluster minus one to not include that in the average
+
             #### Get distance between current point and closest label/cluster centroid
             other_cluster_centroid_rows = [x for x in range(len(unique_labs)) if x != unique_labs.index(obs_label)] #this is a list corresponding to all other centroid rows in centroid_mat
             other_cluster_centroids = centroid_mat[other_cluster_centroid_rows,] 
@@ -87,3 +86,8 @@ class Silhouette:
 
         if X.shape[0] != len(y):
             raise AssertionError(f"The number of observations is different than the number of provided labels")
+
+            
+#     def _get_pairwise_distances(self)
+
+
