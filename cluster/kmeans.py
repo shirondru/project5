@@ -363,7 +363,10 @@ class KMeans:
         centroid_mat[cluster,] = filtered_mat[new_centroid_idx,] #save this point's coordinates for use as centroid.
         
         
-        #current new_centroid_idx might be shifted in `mat` because point(s) only non_centroid_points were used
+        #current new_centroid_idx might be shifted in `mat` because only non_centroid_points were used to find new_centroid_idx, meaning
+        #some rows from `mat` are not included in the search. 
+        #the code below aims to map the new_centroid_idx back to its original location in map, in order to add this original location to the centroid_idxs list
+        #and avoid re-sampling this point as a cluster centroid
         shift = 0
         for centroid_idx in centroid_idxs:
             if new_centroid_idx < centroid_idx:
