@@ -87,7 +87,7 @@ def test_order_preservation():
 
     centroid_mat = km.get_centroids()
     for obs in range(len(pred)):
-        mean_intra_distance,nearest_centroid_distance = sil._get_silhouette_distances(X,y,unique_labels,centroid_mat,obs)
+        mean_intra_distance,nearest_centroid_distance = sil._get_silhouette_distances(clusters,pred,sorted(list(set(pred))),centroid_mat,obs)
         score = (nearest_centroid_distance - mean_intra_distance) / (max(nearest_centroid_distance,mean_intra_distance))
         assert approx_equal(scores[obs],score), f"Re-calculated Silhouette Score is not the same as the model's Silhouette score for observation {obs}"
 
