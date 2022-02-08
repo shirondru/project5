@@ -1,3 +1,5 @@
+![BuildStatus](https://github.com/shirondru/Project5/actions/workflows/pytest.yml/badge.svg?event=push)
+
 # Project 5
 Implementation of KMeans and Silhouette Scoring
 
