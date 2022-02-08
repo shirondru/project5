@@ -1,6 +1,5 @@
 import numpy as np
 from scipy.spatial.distance import cdist
-import random
 class KMeans:
     def __init__(
             self,
@@ -209,10 +208,10 @@ class KMeans:
         if self.fitted:
             self._check_dimensions(mat) # Check that the input matrix `mat` has the same number of features as the fitted centroid vectors.
                 
-                
+            
             #assign each observation to the cluster with the closest centroid:
             #use np.argmin to get index of centroid with minimum  distance to that observation
-            #add 1 to convert index to cluster (i.e, index 0 ==> cluster 1)
+            #add 1 to convert index to cluster (i.e, index 0 ==> cluster 1). Therefore, clusters start at 1, not 0 
             return np.argmin(cdist(mat,self._centroid_locations,metric = self._metric),axis = 1) + 1
 
             
@@ -238,7 +237,7 @@ class KMeans:
         if self.fitted:
             
             if mat is None:
-                return self.__training_mse
+                return self._training_mse
             self._check_dimensions(mat) #Check that the input matrix `mat` has the same number of features as the fitted centroid vectors.
             return self._MSE(mat, self._centroid_locations,self._training_clusters)
 
