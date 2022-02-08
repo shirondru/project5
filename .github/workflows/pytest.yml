@@ -1,0 +1,22 @@
+name: Project5 Tests
+on: 
+  push:
+    branches: [main]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Set up Python 3.9
+        uses: actions/setup-python@v1
+        with:
+          python-version: 3.9
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip 
+          python -m pip install pytest==6.2.5
+          pip install cluster 
+          pip install -r requirements.txt
+      - name: Test with pytest
+        run: python -m pytest -v test/*
