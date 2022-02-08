@@ -79,14 +79,15 @@ def test_order_preservation():
     km = KMeans(k=3,random_state = 0)
     km.fit(clusters)
     pred = km.predict(clusters)
-    scores = Silhouette().score(clusters, pred)
+    sil = Silhouette()
+    scores = sil.score(clusters, pred)
 
     def approx_equal(a, b, allowed_error = 0.0001):
         return abs(a - b) < allowed_error
 
     centroid_mat = km.get_centroids()
     for obs in range(len(pred)):
-        mean_intra_distance,nearest_centroid_distance = self._get_silhouette_distances(X,y,unique_labels,centroid_mat,obs)
+        mean_intra_distance,nearest_centroid_distance = sil._get_silhouette_distances(X,y,unique_labels,centroid_mat,obs)
         score = (nearest_centroid_distance - mean_intra_distance) / (max(nearest_centroid_distance,mean_intra_distance))
         assert approx_equal(scores[obs],score), f"Re-calculated Silhouette Score is not the same as the model's Silhouette score for observation {obs}"
 
