@@ -212,7 +212,7 @@ class KMeans:
             #during the fit, rather than re-computing them
             if np.allclose(mat,self._training_mat):
                 return self._training_clusters #the cluster labels for each point assigned during the fitting
-                
+
             else:  
                 #if trying to use the fit KMeans clustering object to cluster a new dataset
                 #assign each observation to the cluster with the closest centroid:
@@ -227,7 +227,8 @@ class KMeans:
 
     def get_error(self, mat:np.ndarray = None) -> float:
         """
-        returns the final mean-squared distance of the fitted model with respect to the data in `mat`
+        returns the final mean-squared distance of the fitted model with respect to the data in `mat`. If `mat` is not provided,
+        return the MSE obtained during training.
         
         inputs:
             mat: np.ndarray
@@ -242,10 +243,11 @@ class KMeans:
         """
         if self.fitted:
             
-            if mat is None:
+            if mat is None: #if a new data matrix is not provided, return final error on the training data
                 return self._training_mse
-            self._check_dimensions(mat) #Check that the input matrix `mat` has the same number of features as the fitted centroid vectors.
-            return self._MSE(mat, self._centroid_locations,self._training_clusters)
+            else: #if a new data matrix is provided, compute error of fitted model on the new data
+                self._check_dimensions(mat) #Check that the input matrix `mat` has the same number of features as the fitted centroid vectors.
+                return self._MSE(mat, self._centroid_locations,self._training_clusters)
 
         else:
             raise AssertionError(f"You must fit the model to get the cluster centroids")
