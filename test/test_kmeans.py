@@ -105,5 +105,5 @@ def test_label_assignment():
     km.fit(clusters)
     pred_labels = km.predict(clusters)
 
-    assert km._training_clusters == pred_labels, "cluster assignments during fitting are different than predictions on the training data!"
+    assert np.array_equal(km._training_clusters,pred_labels), "cluster assignments during fitting are different than predictions on the training data!"
 
