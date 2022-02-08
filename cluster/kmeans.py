@@ -207,12 +207,18 @@ class KMeans:
 
         if self.fitted:
             self._check_dimensions(mat) # Check that the input matrix `mat` has the same number of features as the fitted centroid vectors.
+
+            #if trying to predict clusters from the same data used to fit the model, return the cluster assignments computed
+            #during the fit, rather than re-computing them
+            if np.allclose(mat,self._training_mat):
+                return self._training_clusters #the cluster labels for each point assigned during the fitting
                 
-            
-            #assign each observation to the cluster with the closest centroid:
-            #use np.argmin to get index of centroid with minimum  distance to that observation
-            #add 1 to convert index to cluster (i.e, index 0 ==> cluster 1). Therefore, clusters start at 1, not 0 
-            return np.argmin(cdist(mat,self._centroid_locations,metric = self._metric),axis = 1) + 1
+            else:  
+                #if trying to use the fit KMeans clustering object to cluster a new dataset
+                #assign each observation to the cluster with the closest centroid:
+                #use np.argmin to get index of centroid with minimum  distance to that observation
+                #add 1 to convert index to cluster (i.e, index 0 ==> cluster 1). Therefore, clusters start at 1, not 0 
+                return np.argmin(cdist(mat,self._centroid_locations,metric = self._metric),axis = 1) + 1
 
             
             
