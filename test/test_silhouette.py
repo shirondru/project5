@@ -1,5 +1,5 @@
 # write your silhouette score unit tests here
-from cluster import make_clusters, KMeans
+from cluster import make_clusters, KMeans, Silhouette
 import numpy as np
 from scipy.spatial.distance import cdist
 import pytest
