@@ -81,7 +81,7 @@ def test_order_preservation():
 	pred = km.predict(clusters)
 	scores = Silhouette().score(clusters, pred)
 
-	def approx_equal(a, b, allowed_error = 0.0001)):
+	def approx_equal(a, b, allowed_error = 0.0001):
         return abs(a - b) < allowed_error
 
 	centroid_mat = km.get_centroids()
