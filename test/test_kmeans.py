@@ -88,10 +88,12 @@ def test_check_easy_cluster2():
     km.fit(clusters)
     pred = km.predict(clusters)
 
-    max_distance = np.mean(cdist(clusters,clusters).ravel()) #max distance between any two points in the dataset
+    max_distance = np.mean(cdist(clusters,clusters).ravel()) #mean distance between all points in the dataset
     training_mse = km.get_error()
     assert training_mse < max_distance, "Your model was not able to properly cluster an easy dataset and get a low MSE"
 
+def test_this_should_break():
+    assert 1 == 2
 
 def test_label_assignment():
     """
