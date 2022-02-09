@@ -16,10 +16,10 @@ def test_silhouette():
 
     Here is how i do this:
     1. Generate clustered data, perform fitting, perform predictions, calculate silhouette scores
-    2. Take each score in the silhouette scores array `scores` and place it inside a len(2) tuple with that scores index in `scores`. Store all of these 
+    2. Take each score in the silhouette scores array `scores` and place it inside a len(2) tuple with that score's index in `scores`. Store all of these 
     tuples in `new_scores`.
-    `	3. Sort new_scores and index the first 5 and last 5 scores to get the 5 smallest and 5 largest silhouette scores. I am able to reference the original index 
-    of these points in `scores` because of the second element in the tuple. This idx also corresponds to the observation's location in `clusters` (I test order preservation with a different unit test to confirm this)
+    3. Sort new_scores and retrieve the first 5 and last 5 scores to get the 5 smallest and 5 largest silhouette scores. I am able to reference the original index 
+    of these points in `scores` after sorting because of the second element in the tuple. This idx also corresponds to the observation's location in `clusters` (I test order preservation with a different unit test to confirm this)
     4. Use these indices to get the 5 largest and 5 smallest points from `clusters`
     5. Get the distance from all of these points to their closest cluster centroid, and find the average between the 5 points with the smallest silhouette score
     and the 5 points with the largest silhouette score.
@@ -86,7 +86,7 @@ def test_order_preservation():
         return abs(a - b) < allowed_error
 
     centroid_mat = km.get_centroids()
-    for obs in range(len(pred)):
+    for obs in range(len(pred)): #recalculate silhouette score for every observation and confirm order was conserved
         mean_intra_distance,nearest_centroid_distance = sil._get_silhouette_distances(clusters,pred,sorted(list(set(pred))),centroid_mat,obs)
         score = (nearest_centroid_distance - mean_intra_distance) / (max(nearest_centroid_distance,mean_intra_distance))
         assert approx_equal(scores[obs],score), f"Re-calculated Silhouette Score is not the same as the model's Silhouette score for observation {obs}"
