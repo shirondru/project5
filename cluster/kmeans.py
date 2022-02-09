@@ -28,7 +28,7 @@ class KMeans:
         self.random_state = random_state
         
         
-        possible_metrics = [
+        possible_metrics = [  #possible metrics supported by scipy.spatial.distance
          'braycurtis', 'canberra', 'chebyshev', 'cityblock', 'correlation', 'cosine', 
          'dice', 'euclidean', 'hamming', 'jaccard', 'jensenshannon', 'kulsinski', 'mahalanobis', 
          'matching', 'minkowski', 'rogerstanimoto', 'russellrao', 'seuclidean', 'sokalmichener', 'sokalsneath', 
@@ -107,9 +107,9 @@ class KMeans:
                 
         What this method is doing:
         1. Initialize a matrix (dim = k,features), `centroid_mat`, to store each of the k clusters' centroid vector
-            2a. Do this by selecting k random points from `mat`, without replacement.
+            1a. Do this via the KMeans++ centroid initialization algorithm implemented in self._centroid_init
         2. Assign each data point to one of the k clusters based on which centroid it is closest to. Store these cluster assignments in `cluster_assignments`
-        3. Until the max iterations is reached or the cluster assignments stop changing:
+        3. Until the max iterations is reached or convergence:
             a. Overwrite `centroid_mat` by introducing each cluster's centroid into a row of centroid_mat. The centroid for cluster 1 goes into row 0
                 aa. The centroid is calculated by taking the mean of each feature across all observations currently assigned to that cluster. These means form each component of the centroid vector
             b. Assign each observation to the cluster with the closest centroid. These new assignments are stored in `new_cluster_assignments`
@@ -119,8 +119,8 @@ class KMeans:
                 bd. Add 1 to each element in the array to convert the indices (which start at 0) to clusters (which starts at 1)
             c. Check for convergence:
                 Two checks for convergence:
-                1) if `new_cluster_assignments` is equal to `cluster_assignments` 
-                2) if the mean squared error between the observations assigned to a cluster and those cluster centroids in the current iteration is similar to that of the previous iteration (within a tolerance `tol`). 
+                1) if `new_cluster_assignments` is equal to `cluster_assignments` (i.e, strict convergence where cluster assignments are not changing)
+                2) if the mean squared error between the observations assigned to a cluster and those cluster centroids in the current iteration is similar to that of the previous iteration (within a tolerance `tol`). This is a soft convergence
                 ca. Break the loop if the algorithm has converged. The current centroid vectors in `centroid_mat` are the final coordinates for the centroids for each cluster
                 cb. If there is no convergence, overwrite `cluster_assignments` with the cluster assignments in `new_cluster_assignments` to calculate new centroids and check if the next iteration has converged
                 
@@ -138,7 +138,7 @@ class KMeans:
         
         ####### assign all points to closest custer centroid ########
         #use np.argmin to get index of centroid with minimum  distance to that observation
-        #add 1 to convert index to cluster (i.e, index 0 ==> cluster 1)
+        #add 1 to convert index to cluster (i.e, index 0 ==> cluster 1) such that cluster labels are all >=1 
         cluster_assignments = np.argmin(cdist(mat,centroid_mat,metric = self._metric),axis = 1) + 1
 
         
@@ -153,7 +153,7 @@ class KMeans:
             ####### recompute each cluster's centroid and store it as a row in centroid_mat ########
             for cluster in range(1,self.k+1):
                 this_cluster_data = mat[cluster_assignments == cluster,] #get rows with observations assigned to current cluster
-                if this_cluster_data.shape[0] > 0: #if there are observations assigned to this cluster, update it. Otherwise don't or you will get a divide by 0 error.
+                if this_cluster_data.shape[0] > 0: #if there are observations assigned to this cluster, update it. Otherwise skip this cluster or else you will get a divide by 0 error.
                     centroid_mat[cluster - 1,] = this_cluster_data.mean(axis=0) #new centroid for this cluster is a vector with mean of each feature column as its components
 
 
@@ -169,7 +169,7 @@ class KMeans:
                 if np.array_equal(new_cluster_assignments,cluster_assignments): #strict convergence check; stop if cluster assignments aren't changing
                     self.convergence_status = "Strict Convergence"
                     break
-                elif abs(previous_mse - current_mse) <= self._tol: # soft convergence check
+                elif abs(previous_mse - current_mse) <= self._tol: # soft convergence check; stop if mse isn't changing significantly
                     self.convergence_status = "Soft Convergence"
                     break
                     
