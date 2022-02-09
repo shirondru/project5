@@ -8,9 +8,11 @@ def test_check_easy_cluster():
     """
     This test checks to see that the KMeans algorithm properly clusters a very easily clusterable dataset.
     I use make_clusters with k=3 and a very low scale to ensure the 3 clusters are high distinct. 
-    I then loop through each of these truth clusters and identify the samples in these clusters. I then check what cluster(s)
-    the KMeans algorithm predicted the same samples are in, and I assert that they are all in only one cluster; because the dataset
-    is so easily clusterable, it should have perfectly clustered these samples, even if it didn't name the clusters in the same way.
+    I then loop through each of these truth clusters and identify the samples in each cluster. I then check what clusters
+    the KMeans algorithm predicted the same samples are in, and I assert that all samples in one truth cluster are also in one predicted cluster.
+    In other words, I check to see that the same clustering was performed as the truth, even if the names of the clusters are different. This should be 
+    the case because of how easily clusterable this dataset is.
+
     """
 
     # create tight clusters
@@ -65,16 +67,16 @@ def test_overfit_capability():
         errors.append(km.get_error())
 
     #assert training MSE decreases as you increase k
-    assert errors[0] > errors[1] > errors[2] > errors[3], "MSE does not decrease with increasing k!"
+    assert errors[0] > errors[1] > errors[2] > errors[3], "Training MSE does not decrease with increasing k!"
      
 
 def test_check_easy_cluster2():
     """
     This test checks to see that the KMeans algorithm properly clusters a very easily clusterable dataset.
     It does this checking that the MSE of each point with its cluster centroid is low, which would suggest tight clustering,
-    which is expected with the easily clusterable data used in this test
-    This test will assert that MSE is less than the distance between the two further points. This will show that, in general, points are closer to their 
-    cluster centroids than two points that are relatively far apart. I will use the same k for KMeans clustering as there are clusters in the true data,
+    which is expected with the easily clusterable data used in this test.
+    This test will assert that the training MSE is less than the average distance between all pairs of points. This will show that, in general, points are closer to their 
+    cluster centroids than the average. I will use the same k for KMeans clustering as there are clusters in the true data,
     to avoid getting a low MSE due to overfitting with a high k
     This also tests the _MSE method; if it works correctly it should give a small value here.
     """
@@ -86,7 +88,7 @@ def test_check_easy_cluster2():
     km.fit(clusters)
     pred = km.predict(clusters)
 
-    max_distance = np.max(cdist(clusters,clusters).ravel()) #max distance between any two points in the dataset
+    max_distance = np.mean(cdist(clusters,clusters).ravel()) #max distance between any two points in the dataset
     training_mse = km.get_error()
     assert training_mse < max_distance, "Your model was not able to properly cluster an easy dataset and get a low MSE"
 
