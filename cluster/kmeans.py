@@ -272,7 +272,7 @@ class KMeans:
     def _centroid_init(self,mat: np.ndarray):
         """
         
-        Initializes cluster centroids in a smart way to reduce possibility of poor clustering due to poor centroid initialization. 
+        Initializes cluster centroids via KMeans++ to reduce possibility of poor clustering due to poor centroid initialization. 
         Initialization is done as follows:
         1) First cluster centroid is chosen randomly from one of the data points in mat
         2) Compute the distance from each point (except any point used as a centroid) to the closest centroid, for all centroids that have been already initialized
@@ -303,9 +303,8 @@ class KMeans:
         for cluster in range(1,self.k):
             non_centroid_points = [x for x in range(mat.shape[0]) if x not in centroid_idxs] #all other rows in `mat` besides those already being used as centroids
             filtered_mat = mat[non_centroid_points,]
-            #1) Compute distance between all non-centroid points and each centroid
-            #2) For each point, keep the distance between it and its closest centroid
-            #3) Of those remaining minimum distances, make the maximum one the next centroid; this is the point that is farthest from it's nearest centroid
+
+      
             if len(centroid_idxs) == 1: #if only 1 centroid has been defined, reshape that centroid vector to be 2D and compatible with cdist()
                 distances = cdist(filtered_mat,centroid_mat[0:len(centroid_idxs),].reshape(1,mat.shape[1]))  #distance between all datapoints and all initialzied centroids              
                 centroid_mat, centroid_idxs = self._find_next_init_centroid(filtered_mat,distances,centroid_idxs,centroid_mat,cluster)
@@ -324,7 +323,7 @@ class KMeans:
         Finds the next point to be used as an initial centroid by finding the point with the maximum distance to its closest centroid
         Here is what the method is doing:
         1. Takes `distance` matrix and, for each row, saves column index corresponding with the minimum distance in that row. In other words, for each data point, it saves the column index corresponding
-        to the cluster centroid from which that data point was closest to. Use these indices to grab the minimum cluster distance for each point from distances. Save these minimum distances in a 1D array 
+        to the cluster centroid from which that data point was closest to. Use these indices to grab the minimum cluster distance for each point from `distances`. Save these minimum distances in a 1D array 
         called `min_distances`
         2. Get the index in `min_distances` corresponding to the longest distance between a point and it's closest centroid
         3. Get precise centroid vector coordinates of this new centroid from filtered_mat. Save these coordinates in `centroid_mat`

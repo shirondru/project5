@@ -62,7 +62,7 @@ class Silhouette:
         for idx,label in enumerate(unique_labels):
             obs_in_cluster = y == label
             cluster_data = X[obs_in_cluster,]
-            centroid_mat[idx,] = cluster_data.mean(axis=0) #store centroid for this label. Use idx not label for assignment in case labels are not contiguous and/or do not start at 0
+            centroid_mat[idx,] = cluster_data.mean(axis=0) #store centroid for this label. Use idx (not label) for assignment in case labels are not contiguous and/or do not start at 0
         
         for obs in range(len(y)):
             mean_intra_distance,nearest_centroid_distance = self._get_silhouette_distances(X,y,unique_labels,centroid_mat,obs)
