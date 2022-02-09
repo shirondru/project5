@@ -92,8 +92,6 @@ def test_check_easy_cluster2():
     training_mse = km.get_error()
     assert training_mse < max_distance, "Your model was not able to properly cluster an easy dataset and get a low MSE"
 
-def test_this_should_break():
-    assert 1 == 2
 
 def test_label_assignment():
     """
