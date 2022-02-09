@@ -231,15 +231,15 @@ class KMeans:
         return the MSE obtained during training.
         
         inputs:
-            mat: np.ndarray
+            mat (optional): np.ndarray
                 A 2D matrix where the rows are observations and columns are features
-                If no mat is provided then this will return training error of the final fitted model on the data it was fit on
-                If a mat is provided then this will return the error of the fitted model on the new data
+               
 
         outputs:
             float
-                the mean-squared error (distance) between the observations in `mat` and the cluster centroids
+                If mat is provided: the mean-squared error (distance) between the observations in `mat` and the cluster centroids
                 in the fitted model.
+                If mat is not provided: the mean-squared error between the observations used to fit the data and the final cluster centroids of the fitted model.
         """
         if self.fitted:
             
