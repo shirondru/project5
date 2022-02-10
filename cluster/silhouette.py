@@ -70,6 +70,13 @@ class Silhouette:
             ###calculate silhouette score and add it to scores array in the same order as the observations provided in y
             score = (min_mean_inter_distance - mean_intra_distance) / (max(min_mean_inter_distance,mean_intra_distance))
             scores[obs] = score
+
+        if self._print_warning: #print a warning if any clusters have only one data point. This would lead to a NaN silhouette score
+            print("Warning! One or more clusters contain only one data point. This suggests previous clustering might be  unreliable.\n" \
+                  "This could be the number of data points is not much greater than the number of clusters!"\
+                 f"# clusters: {len(unique_labels)}\nn_observations:{X.shape[0]}")
+
+
         return scores
 
     def _get_silhouette_distances(self,X: np.ndarray, y: np.ndarray, unique_labels: list,centroid_mat: np.ndarray, obs: int):
@@ -109,11 +116,18 @@ class Silhouette:
         intra_distances = cdist(obs_data,rest_of_cluster_data,metric = self._metric) #get distance between this obs and all obs with same label
         mean_intra_distance = np.sum(intra_distances) / (intra_distances.shape[1] - 1) #intra_distance includes the distance of current obs to itself, so divide by length of points in the cluster minus one to not include that in the average
 
+        if rest_of_cluster_data.shape[0] == 1:
+            #print a warning after calculating all scores to alert user that having only one data point in a cluster will lead to NaN silhouette scores
+            self._print_warning = True
+
+        
         #get minimum mean distance of current observation to all points in any of the other clusters
         mean_inter_distances = []
         for other_label in [x for x in unique_labels if x != obs_label]: #loop through labels corresponding to other clusters
             mean_inter_distances.append(np.mean(cdist(obs_data,X[y==other_label]))) #append mean distance of current point to all points in other cluster to list
         min_mean_inter_distance = min(mean_inter_distances) 
+
+
     
         return mean_intra_distance,min_mean_inter_distance
 
