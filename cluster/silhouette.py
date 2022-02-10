@@ -52,8 +52,8 @@ class Silhouette:
                 a 1D array with the silhouette scores for each of the observations in `X`
         """
         self._check_dimensions(X,y) #check you have a label for every observation
-        self._print_warning = False
-        
+        self._print_warning = False 
+
         scores = np.ndarray(shape=len(y))
         
         ### get position of each label's centroid
