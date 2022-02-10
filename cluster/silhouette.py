@@ -52,6 +52,7 @@ class Silhouette:
                 a 1D array with the silhouette scores for each of the observations in `X`
         """
         self._check_dimensions(X,y) #check you have a label for every observation
+        self._print_warning = False
         
         scores = np.ndarray(shape=len(y))
         
@@ -120,7 +121,7 @@ class Silhouette:
             #print a warning after calculating all scores to alert user that having only one data point in a cluster will lead to NaN silhouette scores
             self._print_warning = True
 
-        
+
         #get minimum mean distance of current observation to all points in any of the other clusters
         mean_inter_distances = []
         for other_label in [x for x in unique_labels if x != obs_label]: #loop through labels corresponding to other clusters
