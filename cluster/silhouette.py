@@ -65,7 +65,7 @@ class Silhouette:
             centroid_mat[idx,] = cluster_data.mean(axis=0) #store centroid for this label. Use idx (not label) for assignment in case labels are not contiguous and/or do not start at 0
         
         for obs in range(len(y)):
-            mean_intra_distance,nearest_centroid_distance = self._get_silhouette_distances(X,y,unique_labels,centroid_mat,obs)
+            mean_intra_distance,mean_inter_distance = self._get_silhouette_distances(X,y,unique_labels,centroid_mat,obs)
             
             ###calculate silhouette score and add it to scores array in the same order as the observations provided in y
             score = (nearest_centroid_distance - mean_intra_distance) / (max(nearest_centroid_distance,mean_intra_distance))
@@ -112,11 +112,14 @@ class Silhouette:
         #### Get distance between current point and closest label/cluster centroid
         other_cluster_centroid_rows = [x for x in range(len(unique_labels)) if x != unique_labels.index(obs_label)] #this is a list corresponding to all other centroid rows in centroid_mat
         other_cluster_centroids = centroid_mat[other_cluster_centroid_rows,] 
-        inter_distances  = cdist(obs_data, other_cluster_centroids) #distance between current point and all other label/cluster centrouds
-        nearest_centroid_idx = np.argmin(inter_distances) 
-        nearest_centroid_distance = inter_distances[0,nearest_centroid_idx] 
+        cluster_distances  = cdist(obs_data, other_cluster_centroids) #distance between current point and all other label/cluster centrouds
+        nearest_centroid_idx = np.argmin(cluster_distances) 
+        nearest_cluster = other_cluster_centroid_rows[nearest_centroid_idx] #the label corresponding to the cluster with the closest centroid
+        pts_in_nearest_cluster = X[y==nearest_cluster,]
+        mean_inter_distance = np.mean(cdist(obs_data,pts_in_nearest_cluster))
+        # nearest_centroid_distance = inter_distances[0,nearest_centroid_idx] 
     
-        return mean_intra_distance,nearest_centroid_distance
+        return mean_intra_distance,mean_inter_distance
 
     
     
